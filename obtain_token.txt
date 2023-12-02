@@ -1,0 +1,171 @@
+
+                            Token Obtain Login and logout
+                            ------------------------------
+
+
+
+step :1
+
+settings.py 
+------------
+
+implementtation :
+------------------
+
+    1.    INSTALLED_APPS = [
+            ..others..
+            "rest_framework",
+            "rest_framework.authtoken"
+        ]
+    2.  REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'rest_framework.authentication.TokenAuthentication',  # <-- And here
+        ],
+    }
+
+
+step 2: 
+    run after implementtation in settings: 
+        python manage.py makemigrations and migrate 
+
+
+
+step 3: 
+    
+    urls.py 
+    ----------
+
+    1.from rest_framework.authtoken.views import obtain_auth_token
+    2.urlpatterns = [
+        path("login/", obtain_auth_token, name="login"), -------> for login
+        path("logout/", views.logout_view, name="logout"),------> for logout
+
+    ]
+
+
+step 4
+
+views.py 
+----------
+
+    1.for login, You dont have to write logics to validate login .
+    2. for logout ,
+
+        @login_required
+        @api_view(["POST"])
+        @csrf_exempt
+        def logout_view(req):
+            if req.method == "POST":
+                req.user.auth_token.delete()
+                print(req.user)
+                return Response({"MSG": "Log out suceess"})
+            return Response({"msg": "log out failed"})
+
+
+
+    example ;
+    i need to make "GET" request http://127.0.0.1:8000/add/
+
+    its logic : 
+
+    @api_view(["GET", "POST"])
+    @login_required
+    def add_details_view(request):
+        if request.method == "POST":
+            ser_data = AddDetailsSerializer(data=request.data)
+            if ser_data.is_valid():
+                ser_data.save()
+                return Response({"Message": ser_data.data})
+            else:
+                return Response({"Message": ser_data.errors})
+
+        elif request.method == "GET":
+            show_data = UserProductDetails.objects.all()
+            print(request.user, request.auth)
+
+            ser_data = AddDetailsSimpleSerializer(show_data, many=True)
+            return Response({"Message": ser_data.data})
+
+
+
+
+
+step 5 :
+
+    we can only access this page when we are logged in ..becuz it requires login (@login_required)
+        for example :
+            if i make a request to see http://127.0.0.1:8000/add/ the details..
+
+            but i cant see the data without login ..it shows error instead of data 
+            
+
+
+LOGIN METHOD 
+-------------
+step 6 :
+     so now we need to login first.
+
+    but how :(
+        1.go to any api client ex: POST man, Thunder Client ,Rapid,insomnia
+        2.i choose Thunder 
+
+
+        3.http://127.0.0.1:8000/login/ i make request:
+        there are 2  Field 
+        1.username 
+        2.password 
+
+        demo account:
+        username = demo
+        password = 1
+
+        3.now automatically Token genrates for the user who makes Request to Token and that token stores in DB
+        now in this scenario..the random Token genrated for "demo" user...
+
+        4.that token might look like this (e2ae477bbf04a9d01de5c5e9b9a)
+        5.now we have successfully generate our token.
+
+        finally ..now im goin to make a GET request to visit http://127.0.0.1:8000/add/
+
+        it contains details like :
+                    {
+            "Message": [
+                {
+                "id": 1,
+                "product_name": "Iphone",
+                "product_price": 1.0,
+                "user_name": 1,
+                "details_model": 1
+                },
+
+        now i can easily see these details after logged in by token...this is obtain token method ...
+
+
+
+
+Logout :
+
+views.py
+--------
+
+@api_view(["POST"])
+@login_required
+@csrf_exempt
+def logout_view(req):
+    if req.method == "POST":
+        req.user.auth_token.delete()
+        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& useer is  : ", req.user)
+        return Response({"MSG": "Log out suceess"})
+    return Response({"msg": "log out failed"})
+
+
+
+when we visit this http://127.0.0.1:8000/logout/
+
+it will delete the token from our DB ..so user cant see any details gain with the previous token 
+it will throw the error..
+
+
+------------------------------- end --------------------------------------------
+
+
